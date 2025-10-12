@@ -1,0 +1,413 @@
+addLayer("AC", {
+    name: "ach",
+    symbol: "Ac",
+    startData() {
+        return {
+            unlocked: true,
+            points:n(0),
+        }
+    },
+    color: "#ffdd33",
+    resource: "成就",
+    row: "side",
+    update(diff) {
+        player.devSpeed = layers.AC.devSpeedCal()
+    },
+    devSpeedCal() {
+        let dev = n(1)
+        //if(isEndgame())dev=n(0)
+        return dev
+    },
+    achievementPopups: true,
+    achievements: {
+        11: {
+            name: "一个成就",
+            done() { return false },
+            tooltip: "这是一个成就",
+            textStyle: { 'color': '#FFDD33' },
+        },
+    },
+},
+)
+addLayer("q", {
+    name: "指数", // This is optional, only used in a few places, If absent it just uses the layer id.
+    symbol: "↑", // This appears on the layer's node. Default is the id with the first letter capitalized
+    position: 0, // Horizontal position within a row. By default it uses the layer id and sorts in alphabetical order
+    startData() { return {
+        unlocked: true,
+		points: new ExpantaNum(0),
+        memories: new ExpantaNum(0),
+        bitree: new ExpantaNum(0),
+        inf: new ExpantaNum(0),
+    }},
+    color: "#CDEC0F",
+    requires: new ExpantaNum(10), // Can be a function that takes requirement increases into account
+    resource: "指数", // Name of prestige currency
+    baseResource: "旋律", // Name of resource prestige is based on
+    baseAmount() {return player.points}, // Get the current amount of baseResource
+    type: "normal", // normal: cost to gain currency depends on amount gained. static: cost depends on how much you already have
+    exponent: 0.95, // Prestige currency exponent
+    gainMult() { // Calculate the multiplier for main currency from bonuses
+        mult = new ExpantaNum(1)
+        return mult
+    },
+    gainExp() { // Calculate the exponent on main currency from bonuses
+        let a=new ExpantaNum(1)
+        if(hasUpgrade('q',13))a=a.mul(upgradeEffect('q',13))
+        if(hasUpgrade('q',14))a=a.mul(upgradeEffect('q',14))
+        if(hasUpgrade('q',21))a=a.mul(upgradeEffect('q',21))
+        if(a.gte(1000))a=a.div(1000).pow(0.25).mul(1000)
+        if(a.gte(1e44))a=n(10).pow(a.log10().div(44).add(1).logBase(2).mul(44))
+        return a
+    },
+    passiveGeneration() {
+        mult = n(0)
+        if(hasUpgrade('q',43))mult=n(0.01)
+        return mult
+    },
+    memoriesMult() {
+        mult = n(1)
+        if(hasUpgrade('q',34))mult=mult.mul(upgradeEffect('q',34))
+        if(hasUpgrade('q',35))mult=mult.mul(upgradeEffect('q',35))
+        if(hasUpgrade('q',36))mult=mult.mul(upgradeEffect('q',36))
+        return mult
+    },
+    bitreeMult() {
+        mult = n(0.1)
+        if(hasUpgrade('q',41))mult=mult.mul(10)
+        if(hasUpgrade('q',44))mult=mult.mul(upgradeEffect('q',44))
+        if(hasUpgrade('q',45))mult=mult.mul(upgradeEffect('q',45))
+        if(hasUpgrade('q',46))mult=mult.mul(upgradeEffect('q',46))
+        return mult
+    },
+    infMult() {
+        mult = n(0.1)
+        if(hasUpgrade('q',51))mult=mult.mul(upgradeEffect('q',51))
+        return mult
+    },
+    row: 0, // Row the layer is in on the tree (0 is the first row)
+    hotkeys: [
+        {key: "p", description: "P：获得声望点", onPress(){if (canReset(this.layer)) doReset(this.layer)}},
+    ],
+    update(diff){
+        if(hasUpgrade('q',33))player.q.memories=player.q.memories.add(tmp.q.memoriesMult.mul(diff))
+        if(hasUpgrade('q',36))player.q.bitree=player.q.bitree.add(tmp.q.bitreeMult.mul(diff))
+        if(hasUpgrade('q',46))player.q.inf=player.q.inf.add(tmp.q.infMult.mul(diff))
+    },
+    milestones: {
+    },
+    upgrades: {
+        11: {
+            title: "经典起手",
+            description: "指数提升旋律获取",
+            effect() {
+                let eff = n(10).pow(player.q.points.add(1).log10().pow(0.5).mul(3))
+                if(hasUpgrade('q',15))eff=eff.pow(upgradeEffect('q',15))
+                if(eff.gte(1e222))eff=n(10).pow(eff.log10().div(222).add(1).logBase(2).mul(222))
+                if(eff.gte("ee7"))eff=n(10).pow(eff.log10().div(1e7).add(1).logBase(2).mul(1e7))
+                return eff
+            },
+            effectDisplay() { let a = "x" + format(this.effect());let b=a;if(this.effect().gte(1e222))a=b+"（一重软上限）";if(this.effect().gte('ee7'))a=b+"（二重软上限）";return a; },
+            cost: new ExpantaNum(1),
+            unlocked() {return true },
+        },
+        12: {
+            title: "憋笑",
+            description: "旋律提升旋律获取",
+            effect() {
+                let eff = n(10).tetr(player.points.pow(20).add(1).slog().mul(0.8))
+                if(hasUpgrade('q',25))eff=eff.pow(eff)
+                if(eff.gte("ee5"))eff=n(10).pow(eff.log10().div(1e5).add(1).logBase(2).pow(3).mul(1e5))
+                return eff
+            },
+            effectDisplay() { let a = "x" + format(this.effect());let b=a;if(this.effect().gte("ee5"))a=b+"（一重软上限）";return a; },
+            cost: new ExpantaNum(3e8),
+            unlocked() { return hasUpgrade('q',11) },
+        },
+        13: {
+            title: "就这点内容吗？",
+            description: "旋律提升指数获取指数",
+            effect() {
+                let eff = player.points.add(10).log10().pow(0.45).div(2).add(0.5).min(3e5)
+                return eff
+            },
+            effectDisplay() { let a = "^" + format(this.effect());return a; },
+            cost: new ExpantaNum(2e22),
+            unlocked() { return hasUpgrade('q',12) },
+        },
+        14: {
+            title: "就这？远远没到无限",
+            description: "指数提升指数获取指数",
+            effect() {
+                let eff = player.q.points.add(10).log10().pow(0.15).div(2).add(0.5).min(3e5)
+                return eff
+            },
+            effectDisplay() { let a = "^" + format(this.effect());return a; },
+            cost: new ExpantaNum(1e145),
+            unlocked() { return hasUpgrade('q',13) },
+        },
+        15: {
+            title: "OoM起飞",
+            description: "旋律提升第一个升级效果",
+            effect() {
+                let eff = player.points.add(10).log10().pow(0.375).div(4).add(0.75).min(3e5)
+                if(hasUpgrade('q',23))eff=eff.pow(eff)
+                return eff
+            },
+            effectDisplay() { let a = "^" + format(this.effect());return a; },
+            cost: new ExpantaNum("e616"),
+            unlocked() { return hasUpgrade('q',14) },
+        },
+        16: {
+            title: "不是指数吗？怎么成软上限了",
+            description: "旋律提升旋律获取指数",
+            effect() {
+                let eff = player.points.add(10).log10().pow(0.225).div(5).add(0.8).min(3e5)
+                if(hasUpgrade('q',24))eff=eff.pow(eff)
+                if(hasUpgrade('q',26))eff=eff.pow(10)
+                return eff
+            },
+            effectDisplay() { let a = "^" + format(this.effect());return a; },
+            cost: new ExpantaNum("e15480"),
+            unlocked() { return hasUpgrade('q',15) },
+        },
+        21: {
+            title: "OoM起飞^2",
+            description: "旋律的软上限强度提升指数获取指数",
+            effect() {
+                let eff = player.overflowStrength
+                if(eff.gte(3e5))eff=n(10).pow(eff.log10().div(n(3e5).log10()).add(1).logBase(2).mul(n(3e5).log10()))
+                if(eff.gte("ee7"))eff=n(10).pow(n(10).pow(eff.log10().log10().div(7).pow(0.125).mul(7)))
+                return eff
+            },
+            effectDisplay() { let a = "^" + format(this.effect());let b=a;if(this.effect().gte(3e5))a=b+"（一重软上限）";if(this.effect().gte("ee7"))a=b+"（二重软上限）";return a; },
+            cost: new ExpantaNum("e34150"),
+            unlocked() { return hasUpgrade('q',16) },
+        },
+        22: {
+            title: "OoM起飞^3",
+            description: "指数提升旋律获取指数",
+            effect() {
+                let eff = player.q.points.add(10).log10().pow(0.4).div(1.6).add(0.375).min(3e5)
+                return eff
+            },
+            effectDisplay() { let a = "^" + format(this.effect());return a; },
+            cost: new ExpantaNum("e52550"),
+            unlocked() { return hasUpgrade('q',21) },
+        },
+        23: {
+            title: "OoM起飞^4",
+            description: "第五个升级的效果变为自己次方",
+            cost: new ExpantaNum("e4388000"),
+            unlocked() { return hasUpgrade('q',22) },
+        },
+        24: {
+            title: "整数价格，爽！",
+            description: "第六个升级的效果变为自己次方",
+            cost: new ExpantaNum("e6e6"),
+            unlocked() { return hasUpgrade('q',23) },
+        },
+        25: {
+            title: "你要干什么？？？",
+            description: "第二个升级的效果变为自己次方（但是有软上限，诶嘿）",
+            cost: new ExpantaNum("e7523000"),
+            unlocked() { return hasUpgrade('q',24) },
+        },
+        26: {
+            title: "你要干什么？？？？？",
+            description: "第六个升级的效果变为十次方",
+            cost: new ExpantaNum("e213210000"),
+            unlocked() { return hasUpgrade('q',25) },
+        },
+        31: {
+            title: "给我退，退，退",
+            description: "点数获取指数^10",
+            cost: new ExpantaNum("e2.2819e9"),
+            unlocked() { return hasUpgrade('q',26) },
+        },
+        32: {
+            title: "给我退，退，退^2",
+            description: "点数获取指数^100",
+            cost: new ExpantaNum("e4.042e14"),
+            unlocked() { return hasUpgrade('q',31) },
+        },
+        33: {
+            title: "资源来了吗？有点意思",
+            description(){return "每秒获得1源点，基于源点增益点数获取指数（你有"+format(player.q.memories)+"源点）";},
+            effect() {
+                let eff = player.q.memories.add(1).pow(1.2)
+                return eff
+            },
+            effectDisplay() { let a = "指数^" + format(this.effect());return a; },
+            cost: new ExpantaNum("e4.1778e24"),
+            unlocked() { return hasUpgrade('q',32) },
+        },
+        34: {
+            title: "终于不用忍受非整数了",
+            description: "旋律增加源点获取",
+            effect() {
+                let eff = player.points.add(1).log10().add(1).log10().add(1).pow(2.5)
+                return eff
+            },
+            effectDisplay() { let a = "x" + format(this.effect());return a; },
+            cost: new ExpantaNum("e3e38"),
+            unlocked() { return hasUpgrade('q',33) },
+        },
+        35: {
+            title: "黑洞质量？",
+            description: "源点增加源点获取",
+            effect() {
+                let eff = player.q.memories.add(1).log10().add(1).pow(4.5)
+                if(hasUpgrade('q',42))eff=eff.pow(9.5)
+                return eff
+            },
+            effectDisplay() { let a = "x" + format(this.effect());return a; },
+            cost: new ExpantaNum("ee49"),
+            unlocked() { return hasUpgrade('q',34) },
+        },
+        36: {
+            title: "指数的魅力",
+            description(){return "解锁下一个子资源（二叉树）增加源点获取（你有"+format(player.q.bitree)+"二叉树）";},
+            effect() {
+                let eff = n(10).pow(player.q.bitree)
+                if(eff.gte("ee3"))eff=n(10).pow(n(10).pow(eff.log10().log10().div(3).pow(0.35).mul(3)))
+                if(eff.gte("ee5"))eff=n(10).pow(n(10).pow(eff.log10().log10().div(5).pow(hasUpgrade('q',51)?0.15:0.1).mul(5)))
+                return eff
+            },
+            effectDisplay() { let a = "x" + format(this.effect());return a; },
+            cost: new ExpantaNum("ee65"),
+            unlocked() { return hasUpgrade('q',35) },
+        },
+        41: {
+            title: "终焉之诗 「Chapter I」",
+            description:"二叉树获取x10",
+            effect() {
+                let eff = n(10)
+                return eff
+            },
+            effectDisplay() { let a = "x" + format(this.effect());return a; },
+            cost: new ExpantaNum("ee125"),
+            unlocked() { return hasUpgrade('q',36) },
+        },
+        42: {
+            title: "终焉之诗 「Chapter II」",
+            description:"第17个升级的效果变为9.5次方",
+            cost: new ExpantaNum("ee255"),
+            unlocked() { return hasUpgrade('q',41) },
+        },
+        43: {
+            title: "终焉之诗 「Chapter III」",
+            description:"每秒获取1%的指数",
+            cost: new ExpantaNum("e1.79769e308"),
+            unlocked() { return hasUpgrade('q',42) },
+        },
+        44: {
+            title: "终焉之诗 「Chapter IV」",
+            description:"源点增加二叉树获取",
+            effect() {
+                let eff = player.q.memories.add(1).log10().add(1).log10().add(1).pow(2)
+                return eff
+            },
+            effectDisplay() { let a = "x" + format(this.effect());return a; },
+            cost: new ExpantaNum("ee320"),
+            unlocked() { return hasUpgrade('q',43) },
+        },
+        45: {
+            title: "终焉之诗 「Chapter V」",
+            description:"旋律增加二叉树获取",
+            effect() {
+                let eff = player.points.add(10).log10().pow(0.45)
+                return eff
+            },
+            effectDisplay() { let a = "x" + format(this.effect());return a; },
+            cost: new ExpantaNum("ee360"),
+            unlocked() { return hasUpgrade('q',44) },
+        },
+        46: {
+            title: "终焉之诗 「Chapter Finale」",
+            description(){return "解锁下一个子资源（无限）增加二叉树获取（你有"+format(player.q.inf)+"无限）";},
+            effect() {
+                let eff = n(10).pow(player.q.inf)
+                if(eff.gte("ee3"))eff=n(10).pow(n(10).pow(eff.log10().log10().div(3).pow(0.35).mul(3)))
+                if(eff.gte("ee5"))eff=n(10).pow(n(10).pow(eff.log10().log10().div(5).pow(0.1).mul(5)))
+                if(eff.gte("ee30"))eff=n(10).pow(n(10).pow(eff.log10().log10().div(30).pow(0.02).mul(30)))
+                return eff
+            },
+            effectDisplay() { let a = "x" + format(this.effect());return a; },
+            cost: new ExpantaNum("ee500"),
+            unlocked() { return hasUpgrade('q',45) },
+        },
+        51: {
+            title: "「End」",
+            description:"旋律增加无限获取，削弱二叉树效果软上限",
+            effect() {
+                let eff = player.points.add(10).log10().pow(0.3)
+                return eff
+            },
+            effectDisplay() { let a = "x" + format(this.effect());return a; },
+            cost: new ExpantaNum("ee666"),
+            unlocked() { return hasUpgrade('q',46) },
+            style(){return{width:"720px"};},
+        },
+    },
+    layerShown(){return true}
+})
+/*
+addLayer("t", {
+    name: "超越（Transcend）", // This is optional, only used in a few places, If absent it just uses the layer id.
+    symbol: "T", // This appears on the layer's node. Default is the id with the first letter capitalized
+    position: 0, // Horizontal position within a row. By default it uses the layer id and sorts in alphabetical order
+    startData() {
+        return {
+            unlocked: false,
+            points: new ExpantaNum(0),
+        }
+    },
+    color: "#00FFFF",
+
+    requires: function () {
+        let a = new ExpantaNum(100)
+        return a
+    }, // Can be a function that takes requirement increases into account
+    resource: "超越点", // Name of prestige currency
+    baseResource: "声望点", // Name of resource prestige is based on
+    baseAmount() { return player.p.points }, // Get the current amount of baseResource
+    type: "normal", // normal: cost to gain currency depends on amount gained. static: cost depends on how much you already have
+    exponent: 0.4, // Prestige currency exponent
+    gainMult() { // Calculate the multiplier for main currency from bonuses
+        mult = new ExpantaNum(1)
+        return mult
+    },
+    gainExp() { // Calculate the exponent on main currency from bonuses
+        return new ExpantaNum(1)
+    },
+    passiveGeneration() {
+        mult = n(0)
+        return mult
+    },
+    effectDescription() {
+        return "使点数获取x"+format(layers.t.transcend1())
+    },
+    transcend1() {
+        return player.t.points.sqrt().add(1)
+    },
+    row: 1, // Row the layer is in on the tree (0 is the first row)
+    hotkeys: [
+        { key: "t", description: "T：获得超越点", onPress() { if (canReset(this.layer)) doReset(this.layer) } },
+    ],
+    upgrades: {
+        11: {
+            title: "T1",
+            description: "每秒获得100%的声望点",
+            effect() {
+                let eff = n(1)
+                return eff
+            },
+            effectDisplay() { let a = "+" + format(this.effect().mul(100))+"%"; return a; },
+            cost: new ExpantaNum(1),
+            unlocked() { return true },
+        },
+    },
+    layerShown() { return hasUpgrade('p',12)||player.t.unlocked }
+})
+*/
