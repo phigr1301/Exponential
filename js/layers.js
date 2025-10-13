@@ -49,6 +49,7 @@ addLayer("q", {
     exponent: 0.95, // Prestige currency exponent
     gainMult() { // Calculate the multiplier for main currency from bonuses
         mult = new ExpantaNum(1)
+        if(hasUpgrade('p',11))mult=mult.mul(4)
         return mult
     },
     gainExp() { // Calculate the exponent on main currency from bonuses
@@ -56,12 +57,14 @@ addLayer("q", {
         if(hasUpgrade('q',13))a=a.mul(upgradeEffect('q',13))
         if(hasUpgrade('q',14))a=a.mul(upgradeEffect('q',14))
         if(hasUpgrade('q',21))a=a.mul(upgradeEffect('q',21))
+        if(hasUpgrade('p',12))a=a.mul(1.1)
         if(a.gte(1000))a=a.div(1000).pow(0.25).mul(1000)
         if(a.gte(1e44))a=n(10).pow(a.log10().div(44).add(1).logBase(2).mul(44))
         return a
     },
     passiveGeneration() {
         mult = n(0)
+        if(hasUpgrade('p',13))mult=n(0.01)
         if(hasUpgrade('q',43))mult=n(0.01)
         return mult
     },
@@ -70,6 +73,9 @@ addLayer("q", {
         if(hasUpgrade('q',34))mult=mult.mul(upgradeEffect('q',34))
         if(hasUpgrade('q',35))mult=mult.mul(upgradeEffect('q',35))
         if(hasUpgrade('q',36))mult=mult.mul(upgradeEffect('q',36))
+        if(hasUpgrade('p',11))mult=mult.mul(4)
+        if(hasUpgrade('p',13))mult=mult.mul(40)
+        if(hasUpgrade('p',14))mult=mult.mul(upgradeEffect('p',14))
         return mult
     },
     bitreeMult() {
@@ -78,14 +84,19 @@ addLayer("q", {
         if(hasUpgrade('q',44))mult=mult.mul(upgradeEffect('q',44))
         if(hasUpgrade('q',45))mult=mult.mul(upgradeEffect('q',45))
         if(hasUpgrade('q',46))mult=mult.mul(upgradeEffect('q',46))
+        if(hasUpgrade('p',11))mult=mult.mul(4)
+        if(hasUpgrade('p',14))mult=mult.mul(upgradeEffect('p',14))
         return mult
     },
     infMult() {
         mult = n(0.1)
         if(hasUpgrade('q',51))mult=mult.mul(upgradeEffect('q',51))
+        if(hasUpgrade('p',11))mult=mult.mul(4)
+        if(hasUpgrade('p',14))mult=mult.mul(upgradeEffect('p',14))
         return mult
     },
     row: 0, // Row the layer is in on the tree (0 is the first row)
+    displayRow:1000,
     hotkeys: [
         {key: "p", description: "P：获得声望点", onPress(){if (canReset(this.layer)) doReset(this.layer)}},
     ],
@@ -116,6 +127,7 @@ addLayer("q", {
             description: "旋律提升旋律获取",
             effect() {
                 let eff = n(10).tetr(player.points.pow(20).add(1).slog().mul(0.8))
+                if(hasUpgrade('p',11))eff=eff.pow(2)
                 if(hasUpgrade('q',25))eff=eff.pow(eff)
                 if(eff.gte("ee5"))eff=n(10).pow(eff.log10().div(1e5).add(1).logBase(2).pow(3).mul(1e5))
                 return eff
@@ -270,6 +282,8 @@ addLayer("q", {
             description(){return "解锁下一个子资源（二叉树）增加源点获取（你有"+format(player.q.bitree)+"二叉树）";},
             effect() {
                 let eff = n(10).pow(player.q.bitree)
+                if(hasUpgrade('p',12))eff=eff.pow(upgradeEffect('p',12))
+                if(hasUpgrade('p',13))eff=eff.pow(1.2)
                 if(eff.gte("ee3"))eff=n(10).pow(n(10).pow(eff.log10().log10().div(3).pow(0.35).mul(3)))
                 if(eff.gte("ee5"))eff=n(10).pow(n(10).pow(eff.log10().log10().div(5).pow(hasUpgrade('q',51)?0.15:0.1).mul(5)))
                 return eff
@@ -352,10 +366,34 @@ addLayer("q", {
     },
     layerShown(){return true}
 })
-/*
-addLayer("t", {
-    name: "超越（Transcend）", // This is optional, only used in a few places, If absent it just uses the layer id.
-    symbol: "T", // This appears on the layer's node. Default is the id with the first letter capitalized
+addLayer("p", {
+tabFormat: {
+   "升级": {
+        content: [
+   "main-display",
+    "prestige-button",
+    "resource-display",
+    "upgrades",
+],
+    },
+   "里程碑": {
+        content: [
+   "main-display",
+    "prestige-button",
+    "resource-display",
+    "milestones",
+],
+unlocked(){return hasUpgrade('p',14)},
+    },
+   "挑战": {
+        content: [
+   "main-display","blank","challenges",
+],
+unlocked(){return hasMilestone('p',0)},
+    },
+    },
+    name: "转生", // This is optional, only used in a few places, If absent it just uses the layer id.
+    symbol: "q", // This appears on the layer's node. Default is the id with the first letter capitalized
     position: 0, // Horizontal position within a row. By default it uses the layer id and sorts in alphabetical order
     startData() {
         return {
@@ -363,17 +401,17 @@ addLayer("t", {
             points: new ExpantaNum(0),
         }
     },
-    color: "#00FFFF",
-
+    color: "#666EE6",
+    branches:['q'],
     requires: function () {
-        let a = new ExpantaNum(100)
+        let a = new ExpantaNum("e476")
         return a
     }, // Can be a function that takes requirement increases into account
-    resource: "超越点", // Name of prestige currency
-    baseResource: "声望点", // Name of resource prestige is based on
-    baseAmount() { return player.p.points }, // Get the current amount of baseResource
+    resource: "记忆碎片", // Name of prestige currency
+    baseResource: "log(旋律)", // Name of resource prestige is based on
+    baseAmount() { return player.points.max(10).log10() }, // Get the current amount of baseResource
     type: "normal", // normal: cost to gain currency depends on amount gained. static: cost depends on how much you already have
-    exponent: 0.4, // Prestige currency exponent
+    exponent: new ExpantaNum(1/120), // Prestige currency exponent
     gainMult() { // Calculate the multiplier for main currency from bonuses
         mult = new ExpantaNum(1)
         return mult
@@ -386,28 +424,63 @@ addLayer("t", {
         return mult
     },
     effectDescription() {
-        return "使点数获取x"+format(layers.t.transcend1())
+        return "使指数层所有效果变为^"+format(layers.p.eff1())
     },
-    transcend1() {
-        return player.t.points.sqrt().add(1)
+    eff1() {
+        let a=n(1)
+        return a
     },
     row: 1, // Row the layer is in on the tree (0 is the first row)
+    displayRow:999,
     hotkeys: [
         { key: "t", description: "T：获得超越点", onPress() { if (canReset(this.layer)) doReset(this.layer) } },
     ],
+    milestones: {
+        0: {
+            requirementDescription: "累计10记忆碎片",
+            effectDescription: "解锁记忆挑战",
+            done() { return player.p.total.gte(10) }
+        },
+    },
     upgrades: {
         11: {
-            title: "T1",
-            description: "每秒获得100%的声望点",
-            effect() {
-                let eff = n(1)
-                return eff
-            },
-            effectDisplay() { let a = "+" + format(this.effect().mul(100))+"%"; return a; },
+            title: "记忆......",
+            description: "旋律、指数、源点、二叉树、无限获取x4，升级“憋笑”效果^2",
             cost: new ExpantaNum(1),
             unlocked() { return true },
         },
+        12: {
+            title: "世界......",
+            description: "指数获取^1.1，基于记忆碎片提升二叉树效果",
+            effect() {
+                let eff = player.p.points.add(2).pow(0.23)
+                if(eff.gte(5))eff=eff.div(5).pow(0.138).mul(5)
+                if(eff.gte(120))eff=eff.div(120).add(1).logBase(2).mul(120)
+                return eff
+            },
+            effectDisplay() { let a = "^" + format(this.effect());return a; },
+            cost: new ExpantaNum(1),
+            unlocked() { return hasUpgrade('p',11) },
+        },
+        13: {
+            title: "永恒是什么......",
+            description: "源点获取x40，二叉树效果^1.2，保留每秒获取1%的指数",
+            cost: new ExpantaNum(2),
+            unlocked() { return hasUpgrade('p',12) },
+        },
+        14: {
+            title: "我们的未来......",
+            description: "基于记忆碎片提升源点、二叉树、无限获取",
+            effect() {
+                let eff = player.p.points.add(2).pow(1.2)
+                if(eff.gte(60))eff=eff.div(60).pow(0.25).mul(60)
+                if(eff.gte(3600))eff=eff.div(3600).add(1).logBase(2).mul(3600)
+                return eff
+            },
+            effectDisplay() { let a = "x" + format(this.effect());return a; },
+            cost: new ExpantaNum(2),
+            unlocked() { return hasUpgrade('p',13) },
+        },
     },
-    layerShown() { return hasUpgrade('p',12)||player.t.unlocked }
+    layerShown() { return hasUpgrade('q',51)||player.p.unlocked }
 })
-*/

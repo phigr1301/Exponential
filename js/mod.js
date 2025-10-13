@@ -1,7 +1,7 @@
 let modInfo = {
 	name: "指数",
 	id: "ExpoMiantiao",
-	author: "Qazxswe308",
+	author: "InfiniteDream",
 	pointsName: "旋律",
 	discordName: "反命题at",
 	discordLink: "https://www.bilibili.com/video/BV1vL41177sR/?t=35",
@@ -12,13 +12,17 @@ let modInfo = {
 
 // Set your version in num and name
 let VERSION = {
-	num: "0.0.0.1",
-	name: "我不知道",
+	num: "0.0.0.2",
+	name: "Memories",
 }
 
 let changelog = `<h1>更新日志：</h1><br>
-	<h3>0.0.0.1</h3><br>
-		- 初始版本`
+	<h3>v0.0.0.2</h3><br>
+		- 增加了一个层级，4个升级，1个里程碑<br>
+		- 终局：解锁记忆挑战<br><br>
+	<h3>v0.0.0.1</h3><br>
+		- 增加了一个层级，25个升级<br>
+		- 终局：e5e475点数`
 
 let winText = `我们的旅途还会继续......`
 
@@ -45,6 +49,7 @@ function getPointGen() {
 	let gain = new ExpantaNum(1)
 	if (hasUpgrade('q', 11)) gain = gain.mul(upgradeEffect('q',11))
 	if (hasUpgrade('q', 12)) gain = gain.mul(upgradeEffect('q',12))
+    if(hasUpgrade('p',11))gain=gain.mul(4)
 
 	if (hasUpgrade('q', 16)) gain = gain.pow(upgradeEffect('q',16))
 	if (hasUpgrade('q', 22)) gain = gain.pow(upgradeEffect('q',22))
@@ -57,7 +62,7 @@ function getPointGen() {
 
 	for(i=3;i<=10;i++)if(gain.gte(n(10).pow(n(10).pow(i))))gain=n(10).pow(n(10).pow(gain.log10().log10().div(i).pow(0.125).mul(i)))
 
-	if(gain.gte("ee100"))gain=n(10).pow(n(10).pow(n(10).pow(gain.log10().log10().log10().div(2).pow(0.125).mul(2))))
+	for(i=2;i<=5;i++)if(gain.gte(n(10).pow(n(10).pow(n(10).pow(i)))))gain=n(10).pow(n(10).pow(n(10).pow(gain.log10().log10().log10().div(i).pow(0.125).mul(i))))
 
 	player.overflowStrength=preGain.logBase(gain)
 	return gain
@@ -80,11 +85,14 @@ var displayThings = [
 	function(){return player.points.lt("ee10")?"":("由于旋律在e1e10溢出^8，旋律溢出^7的效果更强！！！！！！！")},
 
 	function(){return player.points.lt("ee100")?"":("<br>由于旋律在e1e100元溢出，以上旋律溢出的效果更强！！！！！！！！")},
+	function(){return player.points.lt("ee1000")?"":("由于旋律在e1e1000元溢出^2，以上旋律溢出的效果更强！！！！！！！！！")},
+	function(){return player.points.lt("eee4")?"":("由于旋律在e1e10000元溢出^3，以上旋律溢出的效果更强！！！！！！！！！！")},
+	function(){return player.points.lt("eee5")?"":("由于旋律在ee1e5元溢出^4，以上旋律溢出的效果更强！！！！！！！！！！！")},
 ]
 
 // Determines when the game "ends"
 function isEndgame() {
-	return player.points.gte("e5e475")
+	return hasMilestone('p',0)
 }
 
 
