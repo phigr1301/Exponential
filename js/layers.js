@@ -21,9 +21,24 @@ addLayer("AC", {
     achievementPopups: true,
     achievements: {
         11: {
-            name: "一个成就",
-            done() { return false },
-            tooltip: "这是一个成就",
+            name: "指数的世界",
+            done() { return player.q.points.gte("ee10") },
+            onComplete(){player.AC.points=player.AC.points.add(1)},
+            tooltip: "获得ee10指数",
+            textStyle: { 'color': '#FFDD33' },
+        },
+        12: {
+            name: "回忆的碎片",
+            done() { return player.p.points.gte(1) },
+            onComplete(){player.AC.points=player.AC.points.add(1)},
+            tooltip: "获得1记忆碎片",
+            textStyle: { 'color': '#FFDD33' },
+        },
+        13: {
+            name: "未知的空间",
+            done() { return hasMilestone('p',3)},
+            onComplete(){player.AC.points=player.AC.points.add(1)},
+            tooltip: "解锁未定义空间",
             textStyle: { 'color': '#FFDD33' },
         },
     },
