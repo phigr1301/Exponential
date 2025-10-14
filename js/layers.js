@@ -39,6 +39,7 @@ addLayer("q", {
         memories: new ExpantaNum(0),
         bitree: new ExpantaNum(0),
         inf: new ExpantaNum(0),
+        bestu7eff: new ExpantaNum(1),
     }},
     color: "#CDEC0F",
     requires: new ExpantaNum(10), // Can be a function that takes requirement increases into account
@@ -50,6 +51,12 @@ addLayer("q", {
     gainMult() { // Calculate the multiplier for main currency from bonuses
         mult = new ExpantaNum(1)
         if(hasUpgrade('p',11))mult=mult.mul(4)
+        if(hasUpgrade('p',21))mult=mult.mul(4)
+        return mult
+    },
+    directMult() {
+        mult = new ExpantaNum(1)
+        if(hasMilestone('p',1))mult=mult.mul(500)
         return mult
     },
     gainExp() { // Calculate the exponent on main currency from bonuses
@@ -60,6 +67,7 @@ addLayer("q", {
         if(hasUpgrade('p',12))a=a.mul(1.1)
         if(a.gte(1000))a=a.div(1000).pow(0.25).mul(1000)
         if(a.gte(1e44))a=n(10).pow(a.log10().div(44).add(1).logBase(2).mul(44))
+        if(inChallenge('p',12))a=a.pow(Math.cos(player.q.resetTime)/2+0.5)
         return a
     },
     passiveGeneration() {
@@ -76,6 +84,9 @@ addLayer("q", {
         if(hasUpgrade('p',11))mult=mult.mul(4)
         if(hasUpgrade('p',13))mult=mult.mul(40)
         if(hasUpgrade('p',14))mult=mult.mul(upgradeEffect('p',14))
+        if(hasUpgrade('p',15))mult=mult.mul(upgradeEffect('p',15))
+        if(hasUpgrade('p',21))mult=mult.mul(4)
+        if(hasChallenge('p',11))mult=mult.pow(1.025)
         return mult
     },
     bitreeMult() {
@@ -86,6 +97,7 @@ addLayer("q", {
         if(hasUpgrade('q',46))mult=mult.mul(upgradeEffect('q',46))
         if(hasUpgrade('p',11))mult=mult.mul(4)
         if(hasUpgrade('p',14))mult=mult.mul(upgradeEffect('p',14))
+        if(hasUpgrade('p',21))mult=mult.mul(4)
         return mult
     },
     infMult() {
@@ -93,8 +105,12 @@ addLayer("q", {
         if(hasUpgrade('q',51))mult=mult.mul(upgradeEffect('q',51))
         if(hasUpgrade('p',11))mult=mult.mul(4)
         if(hasUpgrade('p',14))mult=mult.mul(upgradeEffect('p',14))
+        if(hasUpgrade('p',15))mult=mult.mul(upgradeEffect('p',15))
+        if(hasUpgrade('p',21))mult=mult.mul(4)
+        if(hasChallenge('p',11))mult=mult.mul(10)
         return mult
     },
+    autoUpgrade(){return hasUpgrade('p',16)},
     row: 0, // Row the layer is in on the tree (0 is the first row)
     displayRow:1000,
     hotkeys: [
@@ -104,6 +120,7 @@ addLayer("q", {
         if(hasUpgrade('q',33))player.q.memories=player.q.memories.add(tmp.q.memoriesMult.mul(diff))
         if(hasUpgrade('q',36))player.q.bitree=player.q.bitree.add(tmp.q.bitreeMult.mul(diff))
         if(hasUpgrade('q',46))player.q.inf=player.q.inf.add(tmp.q.infMult.mul(diff))
+        if(hasMilestone('p',2))player.q.bestu7eff=player.q.bestu7eff.max(player.overflowStrength)
     },
     milestones: {
     },
@@ -128,6 +145,7 @@ addLayer("q", {
             effect() {
                 let eff = n(10).tetr(player.points.pow(20).add(1).slog().mul(0.8))
                 if(hasUpgrade('p',11))eff=eff.pow(2)
+                if(hasUpgrade('p',21))eff=eff.pow(2)
                 if(hasUpgrade('q',25))eff=eff.pow(eff)
                 if(eff.gte("ee5"))eff=n(10).pow(eff.log10().div(1e5).add(1).logBase(2).pow(3).mul(1e5))
                 return eff
@@ -187,7 +205,7 @@ addLayer("q", {
             title: "OoM起飞^2",
             description: "旋律的软上限强度提升指数获取指数",
             effect() {
-                let eff = player.overflowStrength
+                let eff = hasMilestone('p',2)?player.q.bestu7eff:player.overflowStrength
                 if(eff.gte(3e5))eff=n(10).pow(eff.log10().div(n(3e5).log10()).add(1).logBase(2).mul(n(3e5).log10()))
                 if(eff.gte("ee7"))eff=n(10).pow(n(10).pow(eff.log10().log10().div(7).pow(0.125).mul(7)))
                 return eff
@@ -284,6 +302,7 @@ addLayer("q", {
                 let eff = n(10).pow(player.q.bitree)
                 if(hasUpgrade('p',12))eff=eff.pow(upgradeEffect('p',12))
                 if(hasUpgrade('p',13))eff=eff.pow(1.2)
+                if(hasChallenge('p',11))eff=eff.pow(5)
                 if(eff.gte("ee3"))eff=n(10).pow(n(10).pow(eff.log10().log10().div(3).pow(0.35).mul(3)))
                 if(eff.gte("ee5"))eff=n(10).pow(n(10).pow(eff.log10().log10().div(5).pow(hasUpgrade('q',51)?0.15:0.1).mul(5)))
                 return eff
@@ -411,7 +430,7 @@ unlocked(){return hasMilestone('p',0)},
     baseResource: "log(旋律)", // Name of resource prestige is based on
     baseAmount() { return player.points.max(10).log10() }, // Get the current amount of baseResource
     type: "normal", // normal: cost to gain currency depends on amount gained. static: cost depends on how much you already have
-    exponent: new ExpantaNum(1/120), // Prestige currency exponent
+    exponent: new ExpantaNum(1/50), // Prestige currency exponent
     gainMult() { // Calculate the multiplier for main currency from bonuses
         mult = new ExpantaNum(1)
         return mult
@@ -435,11 +454,52 @@ unlocked(){return hasMilestone('p',0)},
     hotkeys: [
         { key: "t", description: "T：获得超越点", onPress() { if (canReset(this.layer)) doReset(this.layer) } },
     ],
+    challenges:{
+        11:{
+            name:"指数塔的坍塌",
+            challengeDescription:"旋律获取的指数塔层数被开根，之后+2，不会超过原本的获取",
+            goalDescription:"e3e55指数",
+            rewardDescription:"无限获取x10，二叉树效果^5，源点获取^1.025",
+            canComplete(){
+                return player.q.points.gte("e3e55")
+            },
+            unlocked(){
+                return hasMilestone('p',0);
+            },
+        },
+        12:{
+            name:"正弦与余弦",
+            challengeDescription:"基于开始挑战经过时间的正弦加成旋律获取，余弦加成指数获取",
+            goalDescription:"e1e476旋律",
+            rewardDescription:"记忆碎片升级5的效果不管在不在挑战中都变为四次方",
+            canComplete(){
+                return player.points.gte("ee476")
+            },
+            unlocked(){
+                return hasMilestone('p',1);
+            },
+        },
+    },
     milestones: {
         0: {
             requirementDescription: "累计10记忆碎片",
             effectDescription: "解锁记忆挑战",
             done() { return player.p.total.gte(10) }
+        },
+        1: {
+            requirementDescription: "在第一个挑战中获得e126000旋律",
+            effectDescription: "解锁第二个挑战，旋律获取x25，指数获取在最后x500",
+            done() { return inChallenge('p',11)&&player.points.gte("e126000") }
+        },
+        2: {
+            requirementDescription: "在第二个挑战中获得e1048旋律",
+            effectDescription: "第7个升级的效果基于本次记忆碎片重置的最佳效果",
+            done() { return inChallenge('p',12)&&player.points.gte("e1048") }
+        },
+        3: {
+            requirementDescription: "获得ee500旋律",
+            effectDescription: "解锁未定义空间",
+            done() { return player.points.gte("ee500") }
         },
     },
     upgrades: {
@@ -453,7 +513,7 @@ unlocked(){return hasMilestone('p',0)},
             title: "世界......",
             description: "指数获取^1.1，基于记忆碎片提升二叉树效果",
             effect() {
-                let eff = player.p.points.add(2).pow(0.23)
+                let eff = (hasUpgrade('p',21)?player.p.total:player.p.points).add(2).pow(0.23)
                 if(eff.gte(5))eff=eff.div(5).pow(0.138).mul(5)
                 if(eff.gte(120))eff=eff.div(120).add(1).logBase(2).mul(120)
                 return eff
@@ -472,7 +532,7 @@ unlocked(){return hasMilestone('p',0)},
             title: "我们的未来......",
             description: "基于记忆碎片提升源点、二叉树、无限获取",
             effect() {
-                let eff = player.p.points.add(2).pow(1.2)
+                let eff =(hasUpgrade('p',21)?player.p.total:player.p.points).add(2).pow(1.2)
                 if(eff.gte(60))eff=eff.div(60).pow(0.25).mul(60)
                 if(eff.gte(3600))eff=eff.div(3600).add(1).logBase(2).mul(3600)
                 return eff
@@ -480,6 +540,31 @@ unlocked(){return hasMilestone('p',0)},
             effectDisplay() { let a = "x" + format(this.effect());return a; },
             cost: new ExpantaNum(2),
             unlocked() { return hasUpgrade('p',13) },
+        },
+        15: {
+            title: "再一次......",
+            description: "基于本层升级数量提升源点、无限获取，在挑战中效果变为三次方",
+            effect() {
+                let eff = n(player.p.upgrades.length).max(1)
+                if(hasChallenge('p',12))eff=eff.pow(4)
+                else if(player.p.activeChallenge)eff=eff.pow(3)
+                return eff
+            },
+            effectDisplay() { let a = "x" + format(this.effect());return a; },
+            cost: new ExpantaNum(5),
+            unlocked() { return hasUpgrade('p',14)&&hasChallenge('p',11) },
+        },
+        16: {
+            title: "一定要......",
+            description: "自动购买指数层升级",
+            cost: new ExpantaNum(20),
+            unlocked() { return hasUpgrade('p',15)&&hasChallenge('p',12) },
+        },
+        21: {
+            title: "全部的记忆",
+            description: "第2、4个记忆碎片升级基于总记忆碎片，第1个升级效果再生效一次",
+            cost: new ExpantaNum(50),
+            unlocked() { return hasUpgrade('p',16) },
         },
     },
     layerShown() { return hasUpgrade('q',51)||player.p.unlocked }
