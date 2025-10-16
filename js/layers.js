@@ -135,7 +135,7 @@ addLayer("q", {
         if(hasUpgrade('q',33))player.q.memories=player.q.memories.add(tmp.q.memoriesMult.mul(diff))
         if(hasUpgrade('q',36))player.q.bitree=player.q.bitree.add(tmp.q.bitreeMult.mul(diff))
         if(hasUpgrade('q',46))player.q.inf=player.q.inf.add(tmp.q.infMult.mul(diff))
-        if(hasMilestone('p',2))player.q.bestu7eff=player.q.bestu7eff.max(player.overflowStrength)
+        if(hasMilestone('p',2))player.q.bestu7eff=player.q.bestu7eff.max(player.overflowStrength2)
     },
     milestones: {
     },
@@ -220,7 +220,7 @@ addLayer("q", {
             title: "OoM起飞^2",
             description: "旋律的软上限强度提升指数获取指数",
             effect() {
-                let eff = hasMilestone('p',2)?player.q.bestu7eff:player.overflowStrength
+                let eff = hasMilestone('p',2)?player.q.bestu7eff:player.overflowStrength2
                 if(eff.gte(3e5))eff=n(10).pow(eff.log10().div(n(3e5).log10()).add(1).logBase(2).mul(n(3e5).log10()))
                 if(eff.gte("ee7"))eff=n(10).pow(n(10).pow(eff.log10().log10().div(7).pow(0.125).mul(7)))
                 return eff
@@ -281,6 +281,7 @@ addLayer("q", {
             description(){return "每秒获得1源点，基于源点增益点数获取指数（你有"+format(player.q.memories)+"源点）";},
             effect() {
                 let eff = player.q.memories.add(1).pow(1.2)
+                eff=eff.pow(tmp.x.blockEff)
                 return eff
             },
             effectDisplay() { let a = "指数^" + format(this.effect());return a; },
@@ -442,12 +443,18 @@ unlocked(){return hasMilestone('p',0)},
         return a
     }, // Can be a function that takes requirement increases into account
     resource: "记忆碎片", // Name of prestige currency
-    baseResource: "log(旋律)", // Name of resource prestige is based on
-    baseAmount() { return player.points.max(10).log10() }, // Get the current amount of baseResource
+    baseResource: function(){return  tmp.p.baseAmount.gte("1e700")?"log(旋律)（已达软上限）":"log(旋律)"}, // Name of resource prestige is based on
+    baseAmount() {
+        let a=player.points.max(10).log10() 
+        if(a.gte("1e700"))a=n(10).pow(a.log10().div(700).pow(0.75).mul(700))
+        if(a.gte("ee4"))a=n(10).pow(n(10).pow(a.log10().log10().div(4).pow(0.4).mul(4)))
+        return a
+    },
     type: "normal", // normal: cost to gain currency depends on amount gained. static: cost depends on how much you already have
     exponent: new ExpantaNum(1/50), // Prestige currency exponent
     gainMult() { // Calculate the multiplier for main currency from bonuses
         mult = new ExpantaNum(1)
+        mult=mult.mul(tmp.x.crystalEff)
         return mult
     },
     gainExp() { // Calculate the exponent on main currency from bonuses
@@ -455,6 +462,7 @@ unlocked(){return hasMilestone('p',0)},
     },
     passiveGeneration() {
         mult = n(0)
+        if(hasMilestone('p',6))mult=n(0.025)
         return mult
     },
     effectDescription() {
@@ -515,6 +523,29 @@ unlocked(){return hasMilestone('p',0)},
             requirementDescription: "获得ee500旋律",
             effectDescription: "解锁未定义空间",
             done() { return player.points.gte("ee500") }
+        },
+        4: {
+            requirementDescription: "累计1e4记忆碎片",
+            effectDescription: "无限残念获取x1.5，解锁一个升级",
+            done() { return player.p.total.gte(1e4) },
+            unlocked(){return hasMilestone('p',3)}
+        },
+        5: {
+            requirementDescription: "累计5e4记忆碎片 & ee600旋律",
+            effectDescription: "星体晶石获取x4，时空方块效果更好，解锁一个升级",
+            done() { return player.p.total.gte(5e4)&&player.points.gte("ee600") },
+            unlocked(){return hasMilestone('p',3)}
+        },
+        6: {
+            requirementDescription: "累计3e8记忆碎片",
+            effectDescription: "每秒获得2.5%的记忆碎片",
+            done() { return player.p.total.gte(3e8) },
+            unlocked(){return hasMilestone('p',3)}
+        },
+        7: {
+            requirementDescription: "获得ee1000旋律",
+            effectDescription: "解锁空间质量（TBD）",
+            done() { return player.points.gte("ee1000") }
         },
     },
     upgrades: {
@@ -583,4 +614,331 @@ unlocked(){return hasMilestone('p',0)},
         },
     },
     layerShown() { return hasUpgrade('q',51)||player.p.unlocked }
+})
+const EXPLORE_LENGTH=10
+const EXPLORE_TEXT=["暂无","你在未定义空间随意乱逛，看到了很多奇异的景象。","你在空间的边缘捡到了一块星体晶石，获得星体晶石x1。","空间的中心隐藏着某人的念想，获得无限残念x1。","时空凝聚而成的方块浮现在你眼前，获得时空方块x1。","由于未定义空间什么都会发生，你在一分钟内探索了3.103827K64座指数塔。","你惊讶的发现这个空间中也有RBNR，但可惜只做到乘法能量。","你Stack Overflow了，接下来10秒无法继续探索。","你用力打碎了f_{BO}(10)秒的时间墙。","你发现这个空间运行的时间复杂度是O(n!)。","有人告诉你探索这个空间一共有10种不同的消息。"]
+const BLOCK_GAIN=[0,0,0,0,1,0,0,0,0,0,0]
+const CRYSTAL_GAIN=[0,0,1,0,0,0,0,0,0,0,0]
+const THOUGHT_GAIN=[0,0,0,1,0,0,0,0,0,0,0]
+const EXPLORE_INTERVAL=[0,1,1,1,1,1,1,10,1,1,1]
+addLayer("x", {
+tabFormat: {
+   "里程碑": {
+        content: [
+   "prestige-button",
+   "blank",
+    function(){return(player.x.unlocked?"milestones":"blank");},
+],
+   unlocked() { return player.x.unlocked },
+    },
+   "???": {
+        content: [
+   "prestige-button",
+],
+   unlocked() { return !player.x.unlocked },
+    },
+   "空间": {
+        content: [
+    ["display-text","欢迎来到未定义空间。在这里，你遇到的一切都是未定义的，因此你可能看到如“QqQe308倒拔垂杨柳”之类的奇异景象。"],
+    "blank",
+    ["display-text","本层级有三种资源：时空方块、星体晶石、无限残念。可以通过探索空间获取。"],
+    "blank",
+    ["display-text",function(){return "<h2>你有<span style=\"color:#e1a043\">"+format(player.x.block)+"</span>时空方块，源点效果<span>^"+format(tmp.x.blockEff)+"</span></h2><br><h2>你有<span style=\"color:#3fe769\">"+format(player.x.crystal)+"</span>星体晶石，记忆碎片获取<span>x"+format(tmp.x.crystalEff)+"</span></h2><br><h2>你有<span style=\"color:#a267e5\">"+format(player.x.thought)+"</span>无限残念，用于购买升级</h2>"}],
+    "blank",
+    ["clickable",11],
+    "blank",
+    ["display-text",function(){let a="<h3>探索记录: </h3>";for(i=0;i<=4;i++)a+=("<br>"+(i+1)+"."+EXPLORE_TEXT[player.x.lastExplore[i]]);return a}]
+],
+   unlocked() { return player.x.unlocked },
+    },
+   "升级": {
+        content: [
+    ["display-text","欢迎来到未定义空间。在这里，你遇到的一切都是未定义的，因此你可能看到如“QqQe308倒拔垂杨柳”之类的奇异景象。"],
+    "blank",
+    ["display-text","本层级有三种资源：时空方块、星体晶石、无限残念。可以通过探索空间获取。"],
+    "blank",
+    ["display-text",function(){return "<h2>你有<span style=\"color:#a267e5\">"+format(player.x.thought)+"</span>无限残念，用于购买升级</h2>"}],
+    "blank",
+    "upgrades",
+],
+   unlocked() { return hasMilestone('x',0) },
+    },
+    },
+    name: "未定义空间", // This is optional, only used in a few places, If absent it just uses the layer id.
+    symbol: "Ø", // This appears on the layer's node. Default is the id with the first letter capitalized
+    position: 1, // Horizontal position within a row. By default it uses the layer id and sorts in alphabetical order
+    startData() {
+        return {
+            unlocked: false,
+            points: new ExpantaNum(0),
+            block:new ExpantaNum(0),
+            crystal:new ExpantaNum(0),
+            thought:new ExpantaNum(0),
+            ecd:0,
+            lastExplore:[0,0,0,0,0],
+        }
+    },
+    color: function(){
+        if(player.x.unlocked)return "#E0E4E9"
+        return "#D018EF"
+    },
+    branches:['q'],
+    requires: function () {
+        let a = new ExpantaNum("ee500")
+        if(player.x.unlocked)a=n(1e309)
+        return a
+    }, // Can be a function that takes requirement increases into account
+    resource: "记忆碎片", // Name of prestige currency
+    baseResource: "旋律", // Name of resource prestige is based on
+    baseAmount() { return player.points }, // Get the current amount of baseResource
+    type: "static", // normal: cost to gain currency depends on amount gained. static: cost depends on how much you already have
+    exponent: 2, // Prestige currency exponent
+    resetsNothing(){
+        return true
+    },
+    tooltip(){
+        return "未定义空间"
+    },
+    row: 1, // Row the layer is in on the tree (0 is the first row)
+    displayRow:1000,
+    prestigeButtonText(){
+        if(player.x.unlocked)return "未定义空间已开启"
+        return "开启未定义空间"
+    },
+    blockEff(){
+        if(!player.x.unlocked)return n(1)
+        let a=player.x.block.add(1).logBase(2).add(1).pow(0.0721)
+        if(hasMilestone('p',5))a=a.sub(1).mul(1.2).add(1)
+        if(hasUpgrade('x',16))a=a.sub(1).mul(upgradeEffect('x',16)).add(1)
+        if(hasUpgrade('x',21))a=a.sub(1).mul(upgradeEffect('x',21)).add(1)
+        if(hasUpgrade('x',22))a=a.sub(1).mul(upgradeEffect('x',22)).add(1)
+        if(hasUpgrade('x',23))a=a.sub(1).mul(upgradeEffect('x',23)).add(1)
+        if(hasUpgrade('x',24))a=a.sub(1).mul(upgradeEffect('x',24)).add(1)
+        return a
+    },
+    crystalEff(){
+        if(!player.x.unlocked)return n(1)
+        let a=player.x.crystal.add(1).pow(0.22222)
+        if(hasUpgrade('x',11))a=player.x.crystal.add(1).pow(n(1).sub(player.x.crystal.add(2).logBase(2).logBase(2).mul(0.18)).max(0.34))
+        return a
+    },
+    blockMult(){
+        let a=n(1)
+        if(hasUpgrade('x',12))a=a.mul(3)
+        if(hasUpgrade('x',13))a=a.mul(upgradeEffect('x',13))
+        if(hasUpgrade('x',14))a=a.mul(upgradeEffect('x',14))
+        if(hasUpgrade('x',15))a=a.mul(upgradeEffect('x',15))
+        return a
+    },
+    crystalMult(){
+        let a=n(1)
+        if(hasUpgrade('x',13))a=a.mul(upgradeEffect('x',13))
+        if(hasMilestone('p',5))a=a.mul(4)
+        if(hasUpgrade('x',14))a=a.mul(upgradeEffect('x',14))
+        if(hasUpgrade('x',15))a=a.mul(upgradeEffect('x',15))
+        return a
+    },
+    thoughtMult(){
+        let a=n(1)
+        if(hasMilestone('p',4))a=a.mul(1.5)
+        if(hasUpgrade('x',13))a=a.mul(upgradeEffect('x',13))
+        if(hasUpgrade('x',14))a=a.mul(upgradeEffect('x',14))
+        if(hasUpgrade('x',15))a=a.mul(upgradeEffect('x',15))
+        return a
+    },
+    update(diff){
+        if(player.x.ecd>0)player.x.ecd-=diff
+        if(player.x.ecd<0)player.x.ecd=0
+    },
+    hotkeys: [
+    ],
+    clickables:{
+        11:{
+            title:"探索未定义空间",
+            display(){return player.x.ecd==0?"当前可探索":"请等待"+player.x.ecd+"秒"},
+            canClick(){return player.x.ecd==0},
+            onClick(){
+                let x=Math.floor(Math.random()*EXPLORE_LENGTH+1)
+                if(hasMilestone('x',1)){
+                    for(i=1;i<=3;i++)if(x<2||x>4)x=Math.floor(Math.random()*EXPLORE_LENGTH+1)
+                    if(x==7)x=Math.floor(Math.random()*EXPLORE_LENGTH+1)
+                }
+                for(i=4;i>=1;i--)player.x.lastExplore[i]=player.x.lastExplore[i-1]
+                player.x.lastExplore[0]=x
+                player.x.block=player.x.block.add(player.x.block.max(player.x.crystal).max(player.x.thought).sub(player.x.block).mul(0.1).mul(BLOCK_GAIN[x]))
+                player.x.crystal=player.x.crystal.add(player.x.block.max(player.x.crystal).max(player.x.thought).sub(player.x.crystal).mul(0.1).mul(CRYSTAL_GAIN[x]))
+                player.x.thought=player.x.thought.add(player.x.block.max(player.x.crystal).max(player.x.thought).sub(player.x.thought).mul(0.1).mul(THOUGHT_GAIN[x]))
+                player.x.block=player.x.block.add(tmp.x.blockMult.mul(BLOCK_GAIN[x]))
+                player.x.crystal=player.x.crystal.add(tmp.x.crystalMult.mul(CRYSTAL_GAIN[x]))
+                player.x.thought=player.x.thought.add(tmp.x.thoughtMult.mul(THOUGHT_GAIN[x]))
+                player.x.ecd=EXPLORE_INTERVAL[x]
+            },
+            style(){return{width:"300px"};},
+        },
+    },
+    milestones: {
+        0: {
+            requirementDescription: "获得10无限残念",
+            effectDescription: "解锁残念升级",
+            done() { return player.x.thought.gte(10) }
+        },
+        1: {
+            requirementDescription: "1种资源达到1e4",
+            effectDescription: "发现资源的概率提升，Stack Overflow的概率降低",
+            done() { return player.x.block.gte(1e4)||player.x.crystal.gte(1e4)||player.x.thought.gte(1e4) }
+        },
+        2: {
+            requirementDescription: "1种资源达到1e6",
+            effectDescription: "小幅增加较低的资源获取",
+            done() { return player.x.block.gte(1e6)||player.x.crystal.gte(1e6)||player.x.thought.gte(1e6) }
+        },
+    },
+    upgrades: {
+        11: {
+            title: "念想的彼端",
+            description: "加强星体晶石的效果",
+            cost: new ExpantaNum(10),
+            currencyDisplayName:"无限残念",
+            currencyInternalName:"thought",
+            currencyLayer:"x",
+            unlocked() { return hasMilestone('x',0) },
+        },
+        12: {
+            title: "浓缩时空",
+            description: "时空方块获取的倍率x3",
+            cost: new ExpantaNum(20),
+            currencyDisplayName:"无限残念",
+            currencyInternalName:"thought",
+            currencyLayer:"x",
+            unlocked() { return hasUpgrade('x',11) },
+        },
+        13: {
+            title: "存在证明",
+            description: "无限残念加成所有3种资源获取",
+            effect() {
+                let eff = player.x.thought.add(2).logBase(2).pow(1.25)
+                if(hasUpgrade('x',16))eff=eff.pow(1.15)
+                if(hasUpgrade('x',21))eff=eff.pow(1.1)
+                if(hasUpgrade('x',22))eff=eff.pow(1.05)
+                if(hasUpgrade('x',23))eff=eff.pow(1.05)
+                if(hasUpgrade('x',24))eff=eff.pow(1.05)
+                return eff
+            },
+            effectDisplay() { let a = "x" + format(this.effect());return a; },
+            cost: new ExpantaNum(25),
+            currencyDisplayName:"无限残念",
+            currencyInternalName:"thought",
+            currencyLayer:"x",
+            unlocked() { return hasUpgrade('x',12)&&hasMilestone('p',4) },
+        },
+        14: {
+            title: "存在证明 II",
+            description: "记忆碎片加成所有3种资源获取",
+            effect() {
+                let eff = player.p.points.add(2).logBase(2).pow(0.75)
+                if(hasUpgrade('x',16))eff=eff.pow(1.15)
+                if(hasUpgrade('x',21))eff=eff.pow(1.1)
+                if(hasUpgrade('x',22))eff=eff.pow(1.05)
+                if(hasUpgrade('x',23))eff=eff.pow(1.05)
+                if(hasUpgrade('x',24))eff=eff.pow(1.05)
+                return eff
+            },
+            effectDisplay() { let a = "x" + format(this.effect());return a; },
+            cost: new ExpantaNum(300),
+            currencyDisplayName:"无限残念",
+            currencyInternalName:"thought",
+            currencyLayer:"x",
+            unlocked() { return hasUpgrade('x',13)&&hasMilestone('p',5) },
+        },
+        15: {
+            title: "存在证明 III",
+            description: "旋律加成所有3种资源获取",
+            effect() {
+                let eff = player.points.max(10).log10().max(10).log10().max(10).log10().pow(1.6)
+                if(hasUpgrade('x',16))eff=eff.pow(1.15)
+                if(hasUpgrade('x',21))eff=eff.pow(1.1)
+                if(hasUpgrade('x',22))eff=eff.pow(1.05)
+                if(hasUpgrade('x',23))eff=eff.pow(1.05)
+                if(hasUpgrade('x',24))eff=eff.pow(1.05)
+                return eff
+            },
+            effectDisplay() { let a = "x" + format(this.effect());return a; },
+            cost: new ExpantaNum(2e4),
+            currencyDisplayName:"无限残念",
+            currencyInternalName:"thought",
+            currencyLayer:"x",
+            unlocked() { return hasUpgrade('x',14) },
+        },
+        16: {
+            title: "浓缩星尘",
+            description: "无限残念加成时空方块效果，3个“存在证明”升级效果^1.15",
+            effect() {
+                let eff = player.x.thought.add(10).log10().add(10).log10()
+                return eff
+            },
+            effectDisplay() { let a = "x" + format(this.effect());return a; },
+            cost: new ExpantaNum(1e5),
+            currencyDisplayName:"无限残念",
+            currencyInternalName:"thought",
+            currencyLayer:"x",
+            unlocked() { return hasUpgrade('x',15) },
+        },
+        21: {
+            title: "浓缩星尘 II",
+            description: "记忆碎片加成时空方块效果，3个“存在证明”升级效果^1.1",
+            effect() {
+                let eff = player.p.points.add(10).log10().add(10).log10()
+                return eff
+            },
+            effectDisplay() { let a = "x" + format(this.effect());return a; },
+            cost: new ExpantaNum(1e6),
+            currencyDisplayName:"无限残念",
+            currencyInternalName:"thought",
+            currencyLayer:"x",
+            unlocked() { return hasUpgrade('x',16) },
+        },
+        22: {
+            title: "浓缩星尘 III",
+            description: "旋律加成时空方块效果，3个“存在证明”升级效果^1.05",
+            effect() {
+                let eff = player.points.add(10).log10().add(10).log10().add(10).log10().add(10).log10().pow(1.35)
+                return eff
+            },
+            effectDisplay() { let a = "x" + format(this.effect());return a; },
+            cost: new ExpantaNum(3e6),
+            currencyDisplayName:"无限残念",
+            currencyInternalName:"thought",
+            currencyLayer:"x",
+            unlocked() { return hasUpgrade('x',21) },
+        },
+        23: {
+            title: "浓缩星尘 IV",
+            description: "源点加成时空方块效果，3个“存在证明”升级效果^1.05",
+            effect() {
+                let eff = player.q.memories.add(10).log10().add(10).log10().add(10).log10().pow(0.5)
+                return eff
+            },
+            effectDisplay() { let a = "x" + format(this.effect());return a; },
+            cost: new ExpantaNum(1e7),
+            currencyDisplayName:"无限残念",
+            currencyInternalName:"thought",
+            currencyLayer:"x",
+            unlocked() { return hasUpgrade('x',22) },
+        },
+        24: {
+            title: "浓缩星尘 V",
+            description: "星体晶石加成时空方块效果，3个“存在证明”升级效果^1.05",
+            effect() {
+                let eff = player.x.thought.add(10).log10().add(10).log10().pow(0.45)
+                return eff
+            },
+            effectDisplay() { let a = "x" + format(this.effect());return a; },
+            cost: new ExpantaNum(3e7),
+            currencyDisplayName:"无限残念",
+            currencyInternalName:"thought",
+            currencyLayer:"x",
+            unlocked() { return hasUpgrade('x',23) },
+        },
+    },
+    layerShown() { return hasMilestone('p',3)||player.x.unlocked }
 })
