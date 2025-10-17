@@ -27,7 +27,7 @@ function commaFormat(num, precision) {
 function regularFormat(num, precision) {
     if (isNaN(num)) return "NaN"
     let zeroCheck = num.array ? num.array[0][1] : num
-    if (zeroCheck < 0.001) return (0).toFixed(precision)
+    if (zeroCheck < 0.0001) return (0).toFixed(precision)
     let fmt = num.toString()
     let f = fmt.split(".")
     if (precision == 0) return commaFormat(num.floor ? num.floor() : Math.floor(num))
