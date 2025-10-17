@@ -479,7 +479,7 @@ unlocked(){return hasMilestone('p',0)},
     ],
     challenges:{
         11:{
-            name:"指数塔的坍塌",
+            name:"指数塔的崩塌",
             challengeDescription:"旋律获取的指数塔层数被开根，之后+2，不会超过原本的获取",
             goalDescription:"e3e55指数",
             rewardDescription:"无限获取x10，二叉树效果^5，源点获取^1.025",
@@ -544,8 +544,23 @@ unlocked(){return hasMilestone('p',0)},
         },
         7: {
             requirementDescription: "获得ee1000旋律",
-            effectDescription: "解锁空间质量（TBD）",
+            effectDescription: "解锁空间质量",
             done() { return player.points.gte("ee1000") }
+        },
+        8: {
+            requirementDescription: "累计1e262记忆碎片",
+            effectDescription: "质量获取^1.1",
+            done() { return player.p.total.gte(1e262) }
+        },
+        9: {
+            requirementDescription: "累计1e281记忆碎片",
+            effectDescription: "质量获取^1.1",
+            done() { return player.p.total.gte(1e281) }
+        },
+        10: {
+            requirementDescription: "累计1e303记忆碎片",
+            effectDescription: "恭喜通关！",
+            done() { return player.p.total.gte(1e303) }
         },
     },
     upgrades: {
@@ -612,6 +627,36 @@ unlocked(){return hasMilestone('p',0)},
             cost: new ExpantaNum(50),
             unlocked() { return hasUpgrade('p',16) },
         },
+        22: {
+            title: "来点直接的增益",
+            description: "质量获取x1e100，升级“质量压缩 V”的效果再次变为1.8次方",
+            cost: new ExpantaNum(1e30),
+            unlocked() { return hasUpgrade('p',21)&&hasMilestone('p',7) },
+        },
+        23: {
+            title: "不会发散吧？",
+            description: "质量获取x1e1000，升级“质量压缩 V”的效果再次变为3次方",
+            cost: new ExpantaNum(5e38),
+            unlocked() { return hasUpgrade('p',22) },
+        },
+        24: {
+            title: "真的不会发散吗？",
+            description: "质量获取x1e10000，升级“质量压缩 V”的效果再次变为5次方",
+            cost: new ExpantaNum(1e55),
+            unlocked() { return hasUpgrade('p',23) },
+        },
+        25: {
+            title: "我能感觉到就在发散的边缘",
+            description: "质量获取^10",
+            cost: new ExpantaNum(1e75),
+            unlocked() { return hasUpgrade('p',24) },
+        },
+        26: {
+            title: "最后的QoL",
+            description: "自动购买质量可购买，质量获取^1.5",
+            cost: new ExpantaNum(1e195),
+            unlocked() { return hasUpgrade('p',25) },
+        },
     },
     layerShown() { return hasUpgrade('q',51)||player.p.unlocked }
 })
@@ -663,6 +708,16 @@ tabFormat: {
 ],
    unlocked() { return hasMilestone('x',0) },
     },
+   "质量": {
+        content: [
+    ["display-text","达到ee1020旋律后，基于旋律和三种资源自动获取空间质量。"],
+    "blank",
+    ["display-text",function(){return "<h2>你有<span style=\"color:#f3f3f3\">"+formatMass(player.x.mass)+"</span>空间质量<span>(+"+(player.x.mass.gte(10)&&tmp.x.massGain.div(20).gte(player.x.mass.mul(1e5))?format(tmp.x.massGain.div(20).log10().sub(player.x.mass.log10()).mul(20))+"OoMs":formatMass(tmp.x.massGain))+"/s)</span>，三种资源获取<span>x"+format(tmp.x.massEff)+"</span></h2>"}],
+    "blank",
+    "buyables",
+],
+   unlocked() { return hasMilestone('p',7) },
+    },
     },
     name: "未定义空间", // This is optional, only used in a few places, If absent it just uses the layer id.
     symbol: "Ø", // This appears on the layer's node. Default is the id with the first letter capitalized
@@ -676,6 +731,7 @@ tabFormat: {
             thought:new ExpantaNum(0),
             ecd:0,
             lastExplore:[0,0,0,0,0],
+            mass:new ExpantaNum(0),
         }
     },
     color: function(){
@@ -714,12 +770,14 @@ tabFormat: {
         if(hasUpgrade('x',22))a=a.sub(1).mul(upgradeEffect('x',22)).add(1)
         if(hasUpgrade('x',23))a=a.sub(1).mul(upgradeEffect('x',23)).add(1)
         if(hasUpgrade('x',24))a=a.sub(1).mul(upgradeEffect('x',24)).add(1)
+        if(hasMilestone('x',3))a=a.sub(1).mul(4/3).add(1)
         return a
     },
     crystalEff(){
         if(!player.x.unlocked)return n(1)
         let a=player.x.crystal.add(1).pow(0.22222)
         if(hasUpgrade('x',11))a=player.x.crystal.add(1).pow(n(1).sub(player.x.crystal.add(2).logBase(2).logBase(2).mul(0.18)).max(0.34))
+        if(hasMilestone('x',3))a=a.pow(4/3)
         return a
     },
     blockMult(){
@@ -728,6 +786,7 @@ tabFormat: {
         if(hasUpgrade('x',13))a=a.mul(upgradeEffect('x',13))
         if(hasUpgrade('x',14))a=a.mul(upgradeEffect('x',14))
         if(hasUpgrade('x',15))a=a.mul(upgradeEffect('x',15))
+        a=a.mul(tmp.x.massEff)
         return a
     },
     crystalMult(){
@@ -736,6 +795,7 @@ tabFormat: {
         if(hasMilestone('p',5))a=a.mul(4)
         if(hasUpgrade('x',14))a=a.mul(upgradeEffect('x',14))
         if(hasUpgrade('x',15))a=a.mul(upgradeEffect('x',15))
+        a=a.mul(tmp.x.massEff)
         return a
     },
     thoughtMult(){
@@ -744,11 +804,49 @@ tabFormat: {
         if(hasUpgrade('x',13))a=a.mul(upgradeEffect('x',13))
         if(hasUpgrade('x',14))a=a.mul(upgradeEffect('x',14))
         if(hasUpgrade('x',15))a=a.mul(upgradeEffect('x',15))
+        a=a.mul(tmp.x.massEff)
+        return a
+    },
+    massEff(){
+        if(!hasMilestone('p',7))return n(1)
+        let a=player.x.mass.add(1)
+        let ex=n(3)
+        if(gba('x',11)>0)ex=ex.add(buyableEffect('x',11))
+        if(hasUpgrade('x',35))ex=ex.mul(1.5)
+        if(a.gte(10))a=a.div(10).add(1).logBase(2).pow(ex).mul(10)
+        return a
+    },
+    massGain(){
+        if(!hasMilestone('p',7))return n(0)
+        if(player.points.lt("ee1020"))return n(0)
+        let a=player.points.log10().log10().div(1020).sub(1).mul(15)
+        a=a.mul(player.x.block.add(2).logBase(2))
+        a=a.mul(player.x.crystal.add(2).logBase(2))
+        a=a.mul(player.x.thought.add(2).logBase(2))
+        a=a.div(1000)
+        if(gba('x',12)>0)a=a.mul(buyableEffect('x',12))
+        if(hasUpgrade('x',25))a=a.mul(upgradeEffect('x',25))
+        if(hasUpgrade('x',26))a=a.mul(upgradeEffect('x',26))
+        if(hasUpgrade('x',31))a=a.mul(4e5)
+        if(hasUpgrade('x',32))a=a.mul(upgradeEffect('x',32))
+        if(hasUpgrade('p',22))a=a.mul(1e100)
+        if(hasUpgrade('p',23))a=a.mul("ee3")
+        if(hasUpgrade('p',24))a=a.mul("ee4")
+        if(hasUpgrade('p',25))a=a.pow(10)
+        if(hasUpgrade('p',26))a=a.pow(1.5)
+        if(hasMilestone('p',8))a=a.pow(1.1)
+        if(hasMilestone('p',9))a=a.pow(1.1)
         return a
     },
     update(diff){
         if(player.x.ecd>0)player.x.ecd-=diff
         if(player.x.ecd<0)player.x.ecd=0
+        if(hasUpgrade('x',25)&&player.x.ecd==0)clickClickable('x',11)
+        if(hasMilestone('p',7))player.x.mass=player.x.mass.add(tmp.x.massGain.mul(diff))
+        if(hasUpgrade('p',26)){
+            buyBuyable('x',11);
+            buyBuyable('x',12);
+        }
     },
     hotkeys: [
     ],
@@ -760,8 +858,8 @@ tabFormat: {
             onClick(){
                 let x=Math.floor(Math.random()*EXPLORE_LENGTH+1)
                 if(hasMilestone('x',1)){
-                    for(i=1;i<=3;i++)if(x<2||x>4)x=Math.floor(Math.random()*EXPLORE_LENGTH+1)
-                    if(x==7)x=Math.floor(Math.random()*EXPLORE_LENGTH+1)
+                    for(i=1;i<=(hasMilestone('x',4)?8:3);i++)if(x<2||x>4)x=Math.floor(Math.random()*EXPLORE_LENGTH+1)
+                    for(i=1;i<=(hasMilestone('x',4)?2:1);i++)if(x==7)x=Math.floor(Math.random()*EXPLORE_LENGTH+1)
                 }
                 for(i=4;i>=1;i--)player.x.lastExplore[i]=player.x.lastExplore[i-1]
                 player.x.lastExplore[0]=x
@@ -791,6 +889,69 @@ tabFormat: {
             requirementDescription: "1种资源达到1e6",
             effectDescription: "小幅增加较低的资源获取",
             done() { return player.x.block.gte(1e6)||player.x.crystal.gte(1e6)||player.x.thought.gte(1e6) }
+        },
+        3: {
+            requirementDescription: "1种资源达到1e8",
+            effectDescription: "增强前2种资源的效果和第3个升级的效果",
+            done() { return player.x.block.gte(1e8)||player.x.crystal.gte(1e8)||player.x.thought.gte(1e8) },
+        },
+        4: {
+            requirementDescription: "1种资源达到1e12",
+            effectDescription: "发现资源的概率提升，Stack Overflow的概率降低",
+            done() { return player.x.block.gte(1e12)||player.x.crystal.gte(1e12)||player.x.thought.gte(1e12) },
+        },
+    },
+    buyables:{
+        11:{
+            title:"质量增强",
+            display(){return"加强质量的效果指数<br>当前：+"+format(this.effect())+"<br>价格："+formatMass(this.cost())+"<br>已购买："+format(gba('x',11))+"/1e8"},
+            effect(x){
+                let a= n(x).pow(0.5)
+                if(a.gte(10))a=a.div(10).pow(0.4).mul(10)
+                return a
+            },
+            cost(x){
+                return n(2).pow(x.pow(2).add(x).div(2)).mul(1e4)
+            },
+            canAfford(){
+                return player.x.mass.gte(this.cost())
+            },
+            buy(){
+                if(!this.canAfford())return
+                let amt=player.x.mass.div(1e4).logBase(2).mul(8).add(1).pow(0.5).add(1).div(2).floor().min(this.purchaseLimit())
+                if(amt.lt(1e8))player.x.mass=player.x.mass.sub(this.cost(amt.sub(1)))
+                sba('x',11,amt)
+            },
+            purchaseLimit(){
+                return n(1e8)
+            },
+            unlocked(){return hasMilestone('p',7)},
+        },
+        12:{
+            title:"质量凝聚",
+            display(){return"增加质量获取<br>当前：x"+format(this.effect())+"<br>价格："+formatMass(this.cost())+"<br>已购买："+format(gba('x',12))+"/1e8"},
+            effect(x){
+                let base=n(2)
+                if(hasUpgrade('x',33))base=base.mul(upgradeEffect('x',33))
+                let a= base.pow(x)
+                return a
+            },
+            cost(x){
+                return n(10).pow(x.pow(2).add(x).div(2)).mul(1e5)
+            },
+            canAfford(){
+                return player.x.mass.gte(this.cost())
+            },
+            buy(){
+                if(!this.canAfford())return
+                let amt=player.x.mass.div(1e5).logBase(10).mul(8).add(1).pow(0.5).add(1).div(2).floor().min(this.purchaseLimit())
+                if(amt.lt(1e8))player.x.mass=player.x.mass.sub(this.cost(amt.sub(1)))
+                sba('x',12,amt)
+            },
+            purchaseLimit(){
+                return n(1e8)
+            },
+            unlocked(){return hasMilestone('p',7)},
         },
     },
     upgrades: {
@@ -822,6 +983,7 @@ tabFormat: {
                 if(hasUpgrade('x',22))eff=eff.pow(1.05)
                 if(hasUpgrade('x',23))eff=eff.pow(1.05)
                 if(hasUpgrade('x',24))eff=eff.pow(1.05)
+                if(hasMilestone('x',3))eff=eff.pow(1.3)
                 return eff
             },
             effectDisplay() { let a = "x" + format(this.effect());return a; },
@@ -930,6 +1092,7 @@ tabFormat: {
             description: "星体晶石加成时空方块效果，3个“存在证明”升级效果^1.05",
             effect() {
                 let eff = player.x.thought.add(10).log10().add(10).log10().pow(0.45)
+                if(hasUpgrade('x',31))eff=eff.pow(14/9)
                 return eff
             },
             effectDisplay() { let a = "x" + format(this.effect());return a; },
@@ -938,6 +1101,104 @@ tabFormat: {
             currencyInternalName:"thought",
             currencyLayer:"x",
             unlocked() { return hasUpgrade('x',23) },
+        },
+        25: {
+            title: "质量压缩",
+            description: "记忆碎片加成空间质量获取，自动探索",
+            effect() {
+                let eff = player.p.points.add(10).log10().pow(0.8)
+                if(hasUpgrade('x',26))eff=eff.pow(1.35)
+                return eff
+            },
+            effectDisplay() { let a = "x" + format(this.effect());return a; },
+            cost: new ExpantaNum(1e15),
+            currencyDisplayName:"无限残念",
+            currencyInternalName:"thought",
+            currencyLayer:"x",
+            unlocked() { return hasUpgrade('x',24)&&hasMilestone('p',7) },
+        },
+        26: {
+            title: "质量压缩 II",
+            description: "本层的升级数量加成空间质量获取，前一个升级效果更强",
+            effect() {
+                let eff = n(2).pow(player.x.upgrades.length/2)
+                return eff
+            },
+            effectDisplay() { let a = "x" + format(this.effect());return a; },
+            cost: new ExpantaNum(5e16),
+            currencyDisplayName:"无限残念",
+            currencyInternalName:"thought",
+            currencyLayer:"x",
+            unlocked() { return hasUpgrade('x',25) },
+        },
+        31: {
+            title: "质量压缩 III",
+            description: "空间质量获取x4e5，“浓缩星尘 V”更强",
+            cost: new ExpantaNum(1e18),
+            currencyDisplayName:"无限残念",
+            currencyInternalName:"thought",
+            currencyLayer:"x",
+            unlocked() { return hasUpgrade('x',26) },
+        },
+        32: {
+            title: "质量压缩 IV",
+            description: "空间质量加成空间质量获取",
+            effect() {
+                let eff = n(10).pow(player.x.mass.add(1).log10().pow(0.85)).min("ee9")
+                if(hasUpgrade('x',34))eff=eff.pow(1.25).min("ee9")
+                return eff
+            },
+            effectDisplay() { let a = "x" + format(this.effect());return a; },
+            cost: new ExpantaNum(2e20),
+            currencyDisplayName:"无限残念",
+            currencyInternalName:"thought",
+            currencyLayer:"x",
+            unlocked() { return hasUpgrade('x',31) },
+        },
+        33: {
+            title: "质量压缩 V",
+            description: "记忆碎片加成可购买“质量凝聚”的底数",
+            effect() {
+                let eff = player.p.points.add(10).log10().pow(0.4)
+                if(hasUpgrade('x',36))eff=eff.pow(2.5)
+                if(hasUpgrade('p',22))eff=eff.pow(1.8)
+                if(hasUpgrade('p',23))eff=eff.pow(3)
+                if(hasUpgrade('p',24))eff=eff.pow(5)
+                return eff
+            },
+            effectDisplay() { let a = "x" + format(this.effect());return a; },
+            cost: new ExpantaNum(3e25),
+            currencyDisplayName:"无限残念",
+            currencyInternalName:"thought",
+            currencyLayer:"x",
+            unlocked() { return hasUpgrade('x',32) },
+        },
+        34: {
+            title: "质量压缩 VI",
+            description: "“质量压缩 IV”的效果变为1.5次方",
+            cost: new ExpantaNum(1e27),
+            currencyDisplayName:"无限残念",
+            currencyInternalName:"thought",
+            currencyLayer:"x",
+            unlocked() { return hasUpgrade('x',33) },
+        },
+        35: {
+            title: "存在证明 IV",
+            description: "空间质量效果的指数x1.5",
+            cost: new ExpantaNum(1e29),
+            currencyDisplayName:"无限残念",
+            currencyInternalName:"thought",
+            currencyLayer:"x",
+            unlocked() { return hasUpgrade('x',34) },
+        },
+        36: {
+            title: "质量压缩 VII",
+            description: "“质量压缩 V”的效果变为2.5次方",
+            cost: new ExpantaNum(3e38),
+            currencyDisplayName:"无限残念",
+            currencyInternalName:"thought",
+            currencyLayer:"x",
+            unlocked() { return hasUpgrade('x',35) },
         },
     },
     layerShown() { return hasMilestone('p',3)||player.x.unlocked }

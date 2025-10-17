@@ -12,13 +12,16 @@ let modInfo = {
 
 // Set your version in num and name
 let VERSION = {
-	num: "0.0.0.4",
+	num: "0.0.1.0",
 	name: "Memories",
 }
 
 let changelog = `<h1>更新日志：</h1><br>
+	<h3>v0.0.1.0</h3><br>
+		- 增加了13个升级，5个里程碑，2个可购买<br>
+		- 终局：1e303旋律<br><br>
 	<h3>v0.0.0.4</h3><br>
-		- 增加了一个层级，9个升级，7个里程碑，1个可点击<br>
+		- 增加了一个层级，10个升级，7个里程碑，1个可点击<br>
 		- 终局：解锁空间质量<br><br>
 	<h3>v0.0.0.3</h3><br>
 		- 增加了3个升级，3个里程碑，2个挑战<br>
@@ -80,8 +83,8 @@ function getPointGen() {
 	if(gain.gte("eeee10"))gain=n(10).tetr(gain.slog().div(5).pow(0.125).mul(5))
 
 	player.overflowStrength=preGain.logBase(gain)
-	if(preGain.gte("(10^)^9 10")){player.overflowStrength=preGain.slog().sub(gain.slog());player.useType3=true;player.useType2=false;}
-	else if(preGain.gte("eeee10")){player.overflowStrength=preGain.log10().logBase(gain.log10());player.useType3=false;player.useType2=true}
+	if(preGain.gte("eeeee10")){player.overflowStrength=preGain.slog().sub(gain.slog());player.useType3=true;player.useType2=false;}
+	else if(preGain.gte("eee10")){player.overflowStrength=preGain.log10().logBase(gain.log10());player.useType3=false;player.useType2=true}
 	else {player.overflowStrength=preGain.logBase(gain);player.useType3=false;player.useType2=false}
 	player.overflowStrength2=preGain.logBase(gain);
 	return gain
@@ -92,6 +95,7 @@ function addedPlayerData() { return {
 	overflowStrength:n(1),
 	overflowStrength2:n(1),
 	useType2:false,
+	useType3:false,
 }}
 
 // Display extra things at the top of the page
@@ -117,9 +121,35 @@ var displayThings = [
 
 // Determines when the game "ends"
 function isEndgame() {
-	return hasMilestone('p',7)
+	return hasMilestone('p',10)
 }
 
+function gba(layer, id) {
+	return (player[layer].buyables[id])
+}
+function sba(layer, id, amt) {
+	player[layer].buyables[id] = amt
+}
+
+//mass format
+
+function formatMass(x){
+	if(x.lt(1e3))return format(x)+"g"
+	if(x.lt(1e6))return format(x.div(1e3))+"kg"
+	if(x.lt(1.5e56))return format(x.div(1e6))+"t"
+	if(x.lt("ee9"))return format(x.div(1.5e56))+"uni"
+	if(x.lt("ee24"))return format(x.log10().div(1e9))+"mlt"
+	if(x.lt("ee39"))return format(x.log10().div(1e24))+"mgv"
+	if(x.lt("ee54"))return format(x.log10().div(1e39))+"giv"
+	if(x.lt("ee69"))return format(x.log10().div(1e54))+"tev"
+	if(x.lt("ee84"))return format(x.log10().div(1e69))+"pev"
+	if(x.lt("ee99"))return format(x.log10().div(1e84))+"exv"
+	if(x.lt("ee114"))return format(x.log10().div(1e99))+"zev"
+	if(x.lt("ee129"))return format(x.log10().div(1e114))+"yov"
+	let arv=x.log10().div(1e9).log10().div(15).floor()
+	if(arv.add(2).lt(1000))return format(x.log10().div(1e9).div(n(10).pow(arv.mul(15))))+"arv^"+format(arv.add(2),0)
+	return format(x.log10().div(1e9).log10().div(15))+"arvs"
+}
 
 
 // Less important things beyond this point!
