@@ -1,6 +1,7 @@
 addLayer("AC", {
     name: "ach",
     symbol: "Ac",
+    position: 0,
     startData() {
         return {
             unlocked: true,
@@ -15,6 +16,7 @@ addLayer("AC", {
     },
     devSpeedCal() {
         let dev = n(1)
+        if(player.enableGameSpeed)dev=n(2)
         //if(isEndgame())dev=n(0)
         return dev
     },
@@ -41,9 +43,84 @@ addLayer("AC", {
             tooltip: "解锁未定义空间",
             textStyle: { 'color': '#FFDD33' },
         },
+        14: {
+            name: "Time is relative",
+            done() { return false},
+            onComplete(){player.AC.points=player.AC.points.add(1)},
+            tooltip: "进行一次相对论重置",
+            textStyle: { 'color': '#FFDD33' },
+        },
     },
 },
 )
+addLayer("of", {
+tabFormat: {
+   "主页": {
+        content: [
+    ["display-text",function(){return "你有 <h2 style=\"color: rgb(145, 35, 223); text-shadow: rgb(145, 35, 223) 0px 0px 10px;\">"+formatTime(player.of.points)+"</h2> 离线时间"}],
+    "blank",
+    "clickables",
+    "blank",
+    "buyables",
+    "blank",
+    ["display-text",function(){return "咕咕咕"}]
+],
+    },
+    },
+    name: "离线时间", // This is optional, only used in a few places, If absent it just uses the layer id.
+    symbol: "Δ", // This appears on the layer's node. Default is the id with the first letter capitalized
+    position: 1, // Horizontal position within a row. By default it uses the layer id and sorts in alphabetical order
+    startData() {
+        return {
+            unlocked: true,
+            points: new ExpantaNum(0),
+        }
+    },
+    color: "#9123DF",
+    resource: "离线时间",
+    row: "side",
+    update(diff){
+        if(player.z>0){
+            player.of.points=player.of.points.add(player.z)
+            player.z=0
+        }
+        if(!player.isOffline&&player.offTime===undefined){
+            if(player.enableGameSpeed){
+                player.of.points=player.of.points.sub(diff*1.5/player.devSpeed)
+                if(player.of.points<=0){
+                    player.of.points=n(0)
+                    player.enableGameSpeed=false
+                }
+            }
+            return
+        }
+        if(player.isOffline)player.of.points=player.of.points.add(diff/player.devSpeed)
+    },
+    clickables:{
+        11:{
+            title:"存储离线时间",
+            display(){return "当前"+(player.isOffline?"正":"没有")+"在存储离线时间"},
+            canClick(){return true},
+            onClick(){
+                player.isOffline=!player.isOffline
+            },
+            style(){return{width:"150px"};},
+        },
+        12:{
+            title:"游戏速度×2",
+            display(){return "当前"+(player.enableGameSpeed?"正":"没有")+"在加速（每秒消耗1.5s离线时间）"},
+            canClick(){return player.of.points.gte(10)||player.enableGameSpeed},
+            onClick(){
+                player.enableGameSpeed=!player.enableGameSpeed
+            },
+            style(){return{width:"150px"};},
+        },
+    },
+    buyables:{
+
+    },
+    layerShown() { return true },
+})
 addLayer("q", {
     name: "指数", // This is optional, only used in a few places, If absent it just uses the layer id.
     symbol: "↑", // This appears on the layer's node. Default is the id with the first letter capitalized
@@ -86,6 +163,7 @@ addLayer("q", {
         return a
     },
     passiveGeneration() {
+        if(player.isOffline||player.offTime!==undefined)return n(0)
         mult = n(0)
         if(hasUpgrade('p',13))mult=n(0.01)
         if(hasUpgrade('q',43))mult=n(0.01)
@@ -132,6 +210,7 @@ addLayer("q", {
         {key: "p", description: "P：获得声望点", onPress(){if (canReset(this.layer)) doReset(this.layer)}},
     ],
     update(diff){
+        if(player.isOffline||player.offTime!==undefined)return
         if(hasUpgrade('q',33))player.q.memories=player.q.memories.add(tmp.q.memoriesMult.mul(diff))
         if(hasUpgrade('q',36))player.q.bitree=player.q.bitree.add(tmp.q.bitreeMult.mul(diff))
         if(hasUpgrade('q',46))player.q.inf=player.q.inf.add(tmp.q.infMult.mul(diff))
@@ -455,12 +534,14 @@ unlocked(){return hasMilestone('p',0)},
     gainMult() { // Calculate the multiplier for main currency from bonuses
         mult = new ExpantaNum(1)
         mult=mult.mul(tmp.x.crystalEff)
+        if(hasMilestone('p',10))mult=mult.mul(1e5)
         return mult
     },
     gainExp() { // Calculate the exponent on main currency from bonuses
         return new ExpantaNum(1)
     },
     passiveGeneration() {
+        if(player.isOffline||player.offTime!==undefined)return n(0)
         mult = n(0)
         if(hasMilestone('p',6))mult=n(0.025)
         return mult
@@ -559,8 +640,13 @@ unlocked(){return hasMilestone('p',0)},
         },
         10: {
             requirementDescription: "累计1e303记忆碎片",
-            effectDescription: "恭喜通关！",
+            effectDescription: "记忆碎片获取x1e5",
             done() { return player.p.total.gte(1e303) }
+        },
+        11: {
+            requirementDescription: "累计1.79e308记忆碎片",
+            effectDescription: "解锁相对论层级（还没做完，恭喜通关）",
+            done() { return player.p.total.gte(n(2).pow(1024)) }
         },
     },
     upgrades: {
@@ -839,6 +925,7 @@ tabFormat: {
         return a
     },
     update(diff){
+        if(player.isOffline||player.offTime!==undefined)return
         if(player.x.ecd>0)player.x.ecd-=diff
         if(player.x.ecd<0)player.x.ecd=0
         if(hasUpgrade('x',25)&&player.x.ecd==0)clickClickable('x',11)

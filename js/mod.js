@@ -12,11 +12,14 @@ let modInfo = {
 
 // Set your version in num and name
 let VERSION = {
-	num: "0.0.1.0",
+	num: "0.0.1.1",
 	name: "Memories",
 }
 
 let changelog = `<h1>更新日志：</h1><br>
+	<h3>v0.0.1.1</h3><br>
+		- 更改了离线时间机制<br>
+		- 终局：1.79e308旋律<br><br>
 	<h3>v0.0.1.0</h3><br>
 		- 增加了13个升级，5个里程碑，2个可购买<br>
 		- 终局：1e303旋律<br><br>
@@ -55,6 +58,7 @@ function getPointGen() {
 	if(!canGenPoints())
 		return new ExpantaNum(0)
 
+	if(player.isOffline||player.offTime!==undefined)return n(0)
 	let gain = new ExpantaNum(1)
 	if (hasUpgrade('q', 11)) gain = gain.mul(upgradeEffect('q',11))
 	if (hasUpgrade('q', 12)) gain = gain.mul(upgradeEffect('q',12))
@@ -96,6 +100,8 @@ function addedPlayerData() { return {
 	overflowStrength2:n(1),
 	useType2:false,
 	useType3:false,
+	isOffline:false,
+	enableGameSpeed:false,
 }}
 
 // Display extra things at the top of the page
@@ -121,7 +127,7 @@ var displayThings = [
 
 // Determines when the game "ends"
 function isEndgame() {
-	return hasMilestone('p',10)
+	return hasMilestone('p',11)
 }
 
 function gba(layer, id) {
