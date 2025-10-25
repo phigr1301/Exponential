@@ -12,28 +12,39 @@ let modInfo = {
 
 // Set your version in num and name
 let VERSION = {
-	num: "0.0.1.1",
-	name: "Memories",
+	num: "0.0.1.2",
+	name: "Time is relative",
 }
 
 let changelog = `<h1>更新日志：</h1><br>
+	<h3>v0.0.1.2</h3><br>
+		- 增加了一个层级，12个升级，12个里程碑，1个可购买<br>
+		- 成就数：6<br>
+		- 终局：1e44无限点数<br><br>
 	<h3>v0.0.1.1</h3><br>
+		- 增加了1个里程碑<br>
 		- 更改了离线时间机制<br>
+		- 成就数：3<br>
 		- 终局：1.79e308旋律<br><br>
 	<h3>v0.0.1.0</h3><br>
 		- 增加了13个升级，5个里程碑，2个可购买<br>
+		- 成就数：3<br>
 		- 终局：1e303旋律<br><br>
 	<h3>v0.0.0.4</h3><br>
 		- 增加了一个层级，10个升级，7个里程碑，1个可点击<br>
+		- 成就数：3<br>
 		- 终局：解锁空间质量<br><br>
 	<h3>v0.0.0.3</h3><br>
 		- 增加了3个升级，3个里程碑，2个挑战<br>
+		- 成就数：3<br>
 		- 终局：解锁未定义空间<br><br>
 	<h3>v0.0.0.2</h3><br>
 		- 增加了一个层级，4个升级，1个里程碑<br>
+		- 成就数：0<br>
 		- 终局：解锁记忆挑战<br><br>
 	<h3>v0.0.0.1</h3><br>
 		- 增加了一个层级，25个升级<br>
+		- 成就数：0<br>
 		- 终局：e5e475点数`
 
 let winText = `我们的旅途还会继续......`
@@ -65,20 +76,25 @@ function getPointGen() {
     if(hasUpgrade('p',11))gain=gain.mul(4)
     if(hasMilestone('p',1))gain=gain.mul(25)
     if(hasUpgrade('p',21))gain=gain.mul(4)
+    if(hasMilestone('h',0))gain=gain.mul(1.5)
 
 	if (hasUpgrade('q', 16)) gain = gain.pow(upgradeEffect('q',16))
 	if (hasUpgrade('q', 22)) gain = gain.pow(upgradeEffect('q',22))
+    if(hasMilestone('h',0))gain=gain.pow(6)
 
 	if (hasUpgrade('q', 31)) gain = n(10).pow(gain.log10().pow(10))
 	if (hasUpgrade('q', 32)) gain = n(10).pow(gain.log10().pow(100))
 	if (hasUpgrade('q', 33)) gain = n(10).pow(gain.log10().pow(upgradeEffect('q',33)))
+    if(hasMilestone('h',0))gain=n(10).pow(gain.log10().pow(10))
+
+    if(hasMilestone('h',0))gain=n(10).pow(n(10).pow(gain.log10().log10().pow(1.01)))
 
 	if(inChallenge('p',11))gain=n(10).tetr(gain.slog().pow(0.5).add(2)).min(gain)
 	if(inChallenge('p',12))gain=n(10).pow(gain.log10().pow(Math.sin(player.q.resetTime)/2+0.5))
 
 	let preGain=gain
 
-	for(i=3;i<=10;i++)if(gain.gte(n(10).pow(n(10).pow(i))))gain=n(10).pow(n(10).pow(gain.log10().log10().div(i).pow(0.125).mul(i)))
+	for(i=3;i<=10;i++)if(gain.gte(n(10).pow(n(10).pow(i))))gain=n(10).pow(n(10).pow(gain.log10().log10().div(i).pow(hasMilestone('h',2)?0.16:0.125).mul(i)))
 
 	for(i=2;i<=5;i++)if(gain.gte(n(10).pow(n(10).pow(n(10).pow(i)))))gain=n(10).pow(n(10).pow(n(10).pow(gain.log10().log10().log10().div(i).pow(0.125).mul(i))))
 
@@ -127,7 +143,7 @@ var displayThings = [
 
 // Determines when the game "ends"
 function isEndgame() {
-	return hasMilestone('p',11)
+	return hasMilestone('h',11)
 }
 
 function gba(layer, id) {
